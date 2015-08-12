@@ -18,7 +18,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.blocks4j.commons</groupId>
     <artifactId>commons-metrics3</artifactId>
-    <version>1.2.3-SNAPSHOT</version>
+    <version>1.2.3</version>
     <name>Commons Metrics 3</name>
     <description>Commons Metrics 3</description>
     <url>http://github.com/blocks4j/commons-metrics3</url>
@@ -65,7 +65,7 @@
         <url>https://github.com/blocks4j/commons-metrics3.git</url>
         <connection>scm:git:https://github.com/blocks4j/commons-metrics3.git</connection>
         <developerConnection>scm:git:https://github.com/blocks4j/commons-metrics3.git</developerConnection>
-      <tag>HEAD</tag>
+      <tag>commons-metrics3-1.2.3</tag>
   </scm>
     <issueManagement>
         <system>GitHub Issue Management</system>
