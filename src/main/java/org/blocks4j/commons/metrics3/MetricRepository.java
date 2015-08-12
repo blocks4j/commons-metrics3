@@ -128,7 +128,7 @@ public class MetricRepository {
         }
     }
 
-    public Meter getDailyMeter(Class<?> klass, String name, String unit) {
+    public Meter getDailyMeter(Class<?> klass, String name) {
         return repo.getDailyMeter(klass, name);
     }
 
