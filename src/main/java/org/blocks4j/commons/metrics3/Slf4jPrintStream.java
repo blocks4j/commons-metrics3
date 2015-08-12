@@ -21,8 +21,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * @see http://www.koders.com/java/fid1FB4968A61E5E32B9D76E38CC6D370A5B88581AE.aspx
- * @see org.eclipse.buckminster.core.LoggingPrintStream
+ * http://www.koders.com/java/fid1FB4968A61E5E32B9D76E38CC6D370A5B88581AE.aspx
+ * org.eclipse.buckminster.core.LoggingPrintStream
  */
 public class Slf4jPrintStream  extends PrintStream {
     private final Logger log;

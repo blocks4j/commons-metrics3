@@ -65,6 +65,7 @@ public class MetricRepository {
         return new Thread() {
             {
                 setDaemon(true);
+                setName("MetricRepositoryBackupThread");
             }
 
             public void run() {
@@ -84,6 +85,7 @@ public class MetricRepository {
         return new Thread() {
             {
                 setDaemon(true);
+                setName("MetricRepositoryCleanUpThread");
             }
 
             public void run() {
@@ -142,12 +144,5 @@ public class MetricRepository {
 
     public Histogram getDailyHistogram(Class<?> klass, String name) {
         return repo.getDailyHistogram(klass, name);
-    }
-
-
-    public void removeAll() {
-        for (Set<String> keys : repo.getKeys()) {
-            purgeMetrics(keys, repo.getDateFormat(), -1);
-        }
     }
 }
