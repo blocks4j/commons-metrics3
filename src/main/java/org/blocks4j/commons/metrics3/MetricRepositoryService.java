@@ -65,7 +65,7 @@ final class MetricRepositoryService {
 
         synchronized (lockMeter) {
             try {
-                meters.putIfAbsent(metricName, registry.meter(MetricRegistry.name(klass, name + "_" + granularity)));
+                meters.putIfAbsent(metricName, registry.meter(MetricRegistry.name(klass, "meter", name + "_" + granularity)));
             } catch (Exception ignored) {
                 log.error("error while inserting new meter", ignored);
             }
@@ -86,7 +86,7 @@ final class MetricRepositoryService {
 
         synchronized (lockCounter) {
             try {
-                Counter counter = registry.counter(MetricRegistry.name(klass, name + "_" + granularity));
+                Counter counter = registry.counter(MetricRegistry.name(klass, "counter", name + "_" + granularity));
 
                 long value = backup.get(metricName);
                 if (value > 0 && counter.getCount() == 0) {
@@ -123,7 +123,7 @@ final class MetricRepositoryService {
 
         synchronized (lockTimer) {
             try {
-                timers.putIfAbsent(metricName, registry.timer(MetricRegistry.name(klass, name + "_" + day)));
+                timers.putIfAbsent(metricName, registry.timer(MetricRegistry.name(klass, "timer", name + "_" + day)));
             } catch (Exception ignored) {
                 log.error("error while inserting new timer", ignored);
             }
@@ -143,7 +143,7 @@ final class MetricRepositoryService {
 
         synchronized (lockHistogram) {
             try {
-                histograms.putIfAbsent(metricName, registry.histogram(MetricRegistry.name(klass, name + "_" + day)));
+                histograms.putIfAbsent(metricName, registry.histogram(MetricRegistry.name(klass, "histogram", name + "_" + day)));
             } catch (Exception ignored) {
                 log.error("error while inserting new histogram", ignored);
             }

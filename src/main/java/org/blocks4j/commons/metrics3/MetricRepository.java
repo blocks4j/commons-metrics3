@@ -51,7 +51,7 @@ public class MetricRepository {
     private Thread getShutdownHook() {
         return new Thread() {
             {
-                setDaemon(true);
+                setName("MetricRepositoryShutdownHook");
             }
 
             public void run() {
@@ -70,7 +70,7 @@ public class MetricRepository {
 
             public void run() {
                 try {
-                    while (!Thread.currentThread().isInterrupted()) {
+                    while (true) {
                         TimeUnit.MINUTES.sleep(1);
                         repo.backupCounters();
                     }
@@ -90,7 +90,7 @@ public class MetricRepository {
 
             public void run() {
                 try {
-                    while (!Thread.currentThread().isInterrupted()) {
+                    while (true) {
                         TimeUnit.MINUTES.sleep(1);
                         cleanUp();
                     }
@@ -130,19 +130,19 @@ public class MetricRepository {
         }
     }
 
-    public Meter getDailyMeter(Class<?> klass, String name) {
+    public Meter dailyMeter(Class<?> klass, String name) {
         return repo.getDailyMeter(klass, name);
     }
 
-    public Counter getDailyCounter(Class<?> klass, String name) {
+    public Counter dailyCounter(Class<?> klass, String name) {
         return repo.getDailyCounter(klass, name);
     }
 
-    public Timer getDailyTimer(Class<?> klass, String name) {
+    public Timer dailyTimer(Class<?> klass, String name) {
         return repo.getDailyTimer(klass, name);
     }
 
-    public Histogram getDailyHistogram(Class<?> klass, String name) {
+    public Histogram dailyHistogram(Class<?> klass, String name) {
         return repo.getDailyHistogram(klass, name);
     }
 }

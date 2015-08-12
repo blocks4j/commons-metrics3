@@ -101,20 +101,17 @@ public class CounterBackupService {
     }
 
     private void remove(File path) {
-        boolean removed = false;
         try {
-            removed = FileUtils.deleteQuietly(path);
+            FileUtils.forceDelete(path);
 
         } catch (Exception e) {
-            if (!removed) {
-                log.error("error while deleting file file [" + path + "]", e);
-            }
+            log.error("error while deleting file file [" + path + "]", e);
         }
     }
 
     private String normalize(String name) {
         String result = name.replaceAll("[\\p{Punct}\\p{Space}]","");
-        return Normalizer.normalize(result, Normalizer.Form.NFD).replaceAll("\\p{InCombiningDiacriticalMarks}+", "") + ".value";
+        return Normalizer.normalize(result, Normalizer.Form.NFD).replaceAll("\\p{InCombiningDiacriticalMarks}+", "").toLowerCase() + ".value";
     }
 
 }
