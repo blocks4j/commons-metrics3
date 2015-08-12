@@ -16,12 +16,11 @@
 package org.blocks4j.commons.metrics3;
 
 import java.util.Arrays;
-import java.util.Date;
+import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang3.LocaleUtils;
 import org.apache.commons.lang3.time.FastDateFormat;
 import org.slf4j.Logger;
@@ -32,9 +31,9 @@ import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 
-public class MetricsRepository {
+final class MetricRepositoryService {
 
-    private static final Logger log = LoggerFactory.getLogger(MetricsRepository.class);
+    private static final Logger log = LoggerFactory.getLogger(MetricRepositoryService.class);
     private final Object lockCounter = new Object();
     private final Object lockMeter = new Object();
     private final Object lockTimer = new Object();
@@ -45,62 +44,17 @@ public class MetricsRepository {
     private final ConcurrentMap<String, Timer> timers = new ConcurrentHashMap<>();
     private final ConcurrentMap<String, Histogram> histograms = new ConcurrentHashMap<>();
 
+    private final CounterBackupService backup;
     private final MetricRegistry registry;
     private final FastDateFormat dateFormat;
-    private final int daysToKeep = 0;
-    private CounterBackupService backup = CounterBackupService.noActionBackupService;
 
-    public MetricsRepository(MetricRegistry registry, String locale) {
+    public MetricRepositoryService(MetricRegistry registry, CounterBackupService backup, String locale) {
         this.registry = registry;
-        this.dateFormat = FastDateFormat.getInstance("dd/MM/yyyy '('EEE')'", LocaleUtils.toLocale(locale));
-    }
-
-    public MetricsRepository(MetricRegistry registry, CounterBackupService backup, String locale) {
         this.backup = backup;
-        this.registry = registry;
         this.dateFormat = FastDateFormat.getInstance("dd/MM/yyyy '('EEE')'", LocaleUtils.toLocale(locale));
     }
 
-    public void cleanup() throws Exception {
-        for (Set<String> keys : Arrays.asList(meters.keySet(), timers.keySet(), counters.keySet(), histograms.keySet())) {
-            purgeMetrics(keys, dateFormat, daysToKeep);
-        }
-        backup.cleanup(daysToKeep);
-    }
-
-    public void backup() throws Exception {
-        for (Entry<String, Counter> each : counters.entrySet()) {
-            backup.persist(each.getKey(), each.getValue().getCount());
-        }
-    }
-
-    private void purgeMetrics(Set<String> keys, FastDateFormat formatter, int daysToKeep) {
-        for (String key : keys) {
-            String[] fullName = key.split("\\|");
-            if (fullName.length != 3) {
-                continue;
-            }
-
-            try {
-                Date meterDate = formatter.parse(fullName[2]);
-                long daysBetween = TimeUnit.MILLISECONDS.toDays(System.currentTimeMillis()) - TimeUnit.MILLISECONDS.toDays(meterDate.getTime());
-
-                if (daysBetween > daysToKeep) {
-                    registry.remove(MetricRegistry.name(Class.forName(fullName[0]), fullName[1] + "_" + fullName[2]));
-                    counters.remove(key);
-                    meters.remove(key);
-                    timers.remove(key);
-                    histograms.remove(key);
-                }
-
-            } catch (Exception e) {
-                log.warn("error while purging metrics", e);
-                continue;
-            }
-        }
-    }
-
-    public Meter getDailyMeter(Class<?> klass, String name, String unit) {
+    public Meter getDailyMeter(Class<?> klass, String name) {
         String granularity = getDay();
         String metricName = getMetricName(klass, name, granularity);
 
@@ -111,9 +65,9 @@ public class MetricsRepository {
 
         synchronized (lockMeter) {
             try {
-                meters.putIfAbsent(metricName, registry.meter(MetricRegistry.name(klass, name + "_" + granularity, unit)));
+                meters.putIfAbsent(metricName, registry.meter(MetricRegistry.name(klass, name + "_" + granularity)));
             } catch (Exception ignored) {
-                log.warn("error while inserting new meter", ignored);
+                log.error("error while inserting new meter", ignored);
             }
         }
 
@@ -141,12 +95,22 @@ public class MetricsRepository {
                 counters.putIfAbsent(metricName, counter);
 
             } catch (Exception ignored) {
-                log.warn("error while inserting new counter", ignored);
+                log.error("error while inserting new counter", ignored);
             }
         }
 
         result = counters.get(metricName);
         return result != null ? result : registry.counter("fallback");
+    }
+
+    public void backupCounters() {
+        for (Entry<String, Counter> each : counters.entrySet()) {
+            try {
+                backup.persist(each.getKey(), each.getValue().getCount());
+            } catch (Exception ignored) {
+                log.error("error while persisting counter", ignored);
+            }
+        }
     }
 
     public Timer getDailyTimer(Class<?> klass, String name) {
@@ -161,7 +125,7 @@ public class MetricsRepository {
             try {
                 timers.putIfAbsent(metricName, registry.timer(MetricRegistry.name(klass, name + "_" + day)));
             } catch (Exception ignored) {
-                log.warn("error while inserting new timer", ignored);
+                log.error("error while inserting new timer", ignored);
             }
         }
 
@@ -181,12 +145,32 @@ public class MetricsRepository {
             try {
                 histograms.putIfAbsent(metricName, registry.histogram(MetricRegistry.name(klass, name + "_" + day)));
             } catch (Exception ignored) {
-                log.warn("error while inserting new histogram", ignored);
+                log.error("error while inserting new histogram", ignored);
             }
         }
 
         result = histograms.get(metricName);
         return result != null ? result : registry.histogram("fallback");
+    }
+
+    public List<Set<String>> getKeys() {
+        return Arrays.asList(meters.keySet(), timers.keySet(), counters.keySet(), histograms.keySet());
+    }
+
+    public void remove(String[] fullName, String key) {
+        try {
+            registry.remove(MetricRegistry.name(Class.forName(fullName[0]), fullName[1] + "_" + fullName[2]));
+            counters.remove(key);
+            meters.remove(key);
+            timers.remove(key);
+            histograms.remove(key);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public FastDateFormat getDateFormat() {
+        return dateFormat;
     }
 
     private String getDay() {
@@ -198,9 +182,4 @@ public class MetricsRepository {
         return String.format("%s|%s|%s", klass.getName(), name, ts);
     }
 
-    public void removeAll() {
-        for (Set<String> keys : Arrays.asList(meters.keySet(), timers.keySet(), counters.keySet(), histograms.keySet())) {
-            purgeMetrics(keys, dateFormat, -1);
-        }
-    }
 }
