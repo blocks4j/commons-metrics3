@@ -17,11 +17,11 @@ package org.blocks4j.commons.metrics3;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import org.apache.commons.lang3.LocaleUtils;
 import org.apache.commons.lang3.time.FastDateFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,14 +44,14 @@ final class MetricRepositoryService {
     private final ConcurrentMap<String, Timer> timers = new ConcurrentHashMap<>();
     private final ConcurrentMap<String, Histogram> histograms = new ConcurrentHashMap<>();
 
-    private final CounterBackupService backup;
+    private final MetricCounterBackup backup;
     private final MetricRegistry registry;
     private final FastDateFormat dateFormat;
 
-    public MetricRepositoryService(MetricRegistry registry, CounterBackupService backup, String locale) {
+    public MetricRepositoryService(MetricRegistry registry, MetricCounterBackup backup, Locale locale) {
         this.registry = registry;
         this.backup = backup;
-        this.dateFormat = FastDateFormat.getInstance("dd/MM/yyyy '('EEE')'", LocaleUtils.toLocale(locale));
+        this.dateFormat = FastDateFormat.getInstance("dd/MM/yyyy '('EEE')'", locale);
     }
 
     public Meter getDailyMeter(Class<?> klass, String name) {

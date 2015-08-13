@@ -16,8 +16,10 @@
 package org.blocks4j.commons.metrics3;
 
 import java.util.Date;
+import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import org.apache.commons.lang3.LocaleUtils;
 import org.apache.commons.lang3.time.FastDateFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,16 +32,50 @@ import com.codahale.metrics.Timer;
 public class MetricRepository {
 
     private static final Logger log = LoggerFactory.getLogger(MetricRepository.class);
-    private final int daysToKeep = 0;
     private final Thread shutdownHook;
     private final MetricRepositoryService repo;
-    private final CounterBackupService backup;
+    private final MetricCounterBackup backup;
 
-    public MetricRepository(MetricRegistry registry, String locale) {
-        this(registry, CounterBackupService.noActionBackupService, locale);
+    public static Builder forRegistry(MetricRegistry registry) {
+        return new Builder(registry);
     }
 
-    public MetricRepository(MetricRegistry registry, CounterBackupService backup, String locale) {
+    public static class Builder {
+        private final MetricRegistry registry;
+        private Locale locale;
+        private String backupDirectory;
+
+        private Builder(MetricRegistry registry) {
+            this.registry = registry;
+            this.locale = Locale.getDefault();
+        }
+
+        public Builder formattedFor(Locale locale) {
+            if (locale != null) {
+                this.locale = locale;
+            }
+            return this;
+        }
+
+        public Builder formattedFor(String locale) {
+            try {
+                this.locale = LocaleUtils.toLocale(locale);
+            } catch (Exception ignored) {
+            }
+            return this;
+        }
+
+        public Builder withBackup(String backupDirectory) {
+            this.backupDirectory = backupDirectory;
+            return this;
+        }
+
+        public MetricRepository build() {
+            return new MetricRepository(registry, new MetricCounterBackup(backupDirectory), locale);
+        }
+    }
+
+    private MetricRepository(MetricRegistry registry, MetricCounterBackup backup, Locale locale) {
         this.backup = backup;
         repo = new MetricRepositoryService(registry, backup, locale);
         shutdownHook = getShutdownHook();
@@ -51,6 +87,7 @@ public class MetricRepository {
     private Thread getShutdownHook() {
         return new Thread() {
             {
+                setDaemon(true);
                 setName("MetricRepositoryShutdownHook");
             }
 
@@ -103,12 +140,12 @@ public class MetricRepository {
 
     private void cleanUp() {
         for (Set<String> keys : repo.getKeys()) {
-            purgeMetrics(keys, repo.getDateFormat(), daysToKeep);
+            purgeMetrics(keys, repo.getDateFormat());
         }
-        backup.cleanup(daysToKeep);
+        backup.cleanup();
     }
 
-    private void purgeMetrics(Set<String> keys, FastDateFormat formatter, int daysToKeep) {
+    private void purgeMetrics(Set<String> keys, FastDateFormat formatter) {
         for (String key : keys) {
             String[] fullName = key.split("\\|");
             if (fullName.length != 3) {
@@ -119,7 +156,7 @@ public class MetricRepository {
                 Date meterDate = formatter.parse(fullName[2]);
                 long daysBetween = TimeUnit.MILLISECONDS.toDays(System.currentTimeMillis()) - TimeUnit.MILLISECONDS.toDays(meterDate.getTime());
 
-                if (daysBetween > daysToKeep) {
+                if (daysBetween > 0) {
                     repo.remove(fullName, key);
                 }
 

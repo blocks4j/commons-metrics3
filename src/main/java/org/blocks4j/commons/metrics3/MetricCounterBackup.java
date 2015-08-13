@@ -16,33 +16,38 @@
 package org.blocks4j.commons.metrics3;
 
 import java.io.File;
-import java.text.Normalizer;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.FileFilterUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class CounterBackupService {
+class MetricCounterBackup {
 
     private final File base;
-    private static final Logger log = LoggerFactory.getLogger(CounterBackupService.class);
+    private static final Logger log = LoggerFactory.getLogger(MetricCounterBackup.class);
 
-    public static final CounterBackupService noActionBackupService = new CounterBackupService() {
+    public static final MetricCounterBackup noActionBackupService = new MetricCounterBackup() {
         public void persist(String name, long value) {}
         public long get(String name) { return 0; }
-        public void cleanup(int daysToKeep) {}
+        public void cleanup() {}
     };
 
-    private CounterBackupService() {
+    private MetricCounterBackup() {
         base = null;
     }
 
-    public CounterBackupService(String path) {
+    public MetricCounterBackup(String path) {
         base = new File(path);
+        try {
+            FileUtils.forceMkdir(base);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("not a directory [" + base + "]");
+        }
         if (!base.canRead()) {
             throw new IllegalArgumentException("unable to read from [" + base + "]");
         }
@@ -84,13 +89,13 @@ public class CounterBackupService {
         }
     }
 
-    public void cleanup(int daysToKeep) {
+    public void cleanup() {
         try {
             for (File file : FileUtils.listFiles(base, FileFilterUtils.trueFileFilter(), null)) {
                 if (file.isDirectory()) {
                     continue;
                 }
-                if (TimeUnit.MILLISECONDS.toDays(System.currentTimeMillis()) - TimeUnit.MILLISECONDS.toDays(file.lastModified()) > daysToKeep) {
+                if (TimeUnit.MILLISECONDS.toDays(System.currentTimeMillis()) - TimeUnit.MILLISECONDS.toDays(file.lastModified()) > 0) {
                     remove(file);
                 }
             }
@@ -110,8 +115,6 @@ public class CounterBackupService {
     }
 
     private String normalize(String name) {
-        String result = name.replaceAll("[\\p{Punct}\\p{Space}]","");
-        return Normalizer.normalize(result, Normalizer.Form.NFD).replaceAll("\\p{InCombiningDiacriticalMarks}+", "").toLowerCase() + ".value";
+        return DigestUtils.sha1Hex(name) + ".counter";
     }
-
 }
