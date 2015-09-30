@@ -35,6 +35,7 @@ public class MetricRepository {
     private final Thread shutdownHook;
     private final MetricRepositoryService repo;
     private final MetricCounterBackup backup;
+    private final MetricRegistry registry;
 
     public static Builder forRegistry(MetricRegistry registry) {
         return new Builder(registry);
@@ -77,6 +78,7 @@ public class MetricRepository {
 
     private MetricRepository(MetricRegistry registry, MetricCounterBackup backup, Locale locale) {
         this.backup = backup;
+        this.registry = registry;
         repo = new MetricRepositoryService(registry, backup, locale);
         shutdownHook = getShutdownHook();
         getBackupThread().start();
@@ -181,5 +183,9 @@ public class MetricRepository {
 
     public Histogram dailyHistogram(Class<?> klass, String name) {
         return repo.getDailyHistogram(klass, name);
+    }
+
+    public MetricRegistry getMetricRegistry() {
+        return registry;
     }
 }
