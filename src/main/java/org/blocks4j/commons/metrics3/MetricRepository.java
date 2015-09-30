@@ -20,6 +20,7 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang3.LocaleUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.FastDateFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -72,14 +73,14 @@ public class MetricRepository {
         }
 
         public MetricRepository build() {
-            return new MetricRepository(registry, new MetricCounterBackup(backupDirectory), locale);
+            return new MetricRepository(registry, backupDirectory, locale);
         }
     }
 
-    private MetricRepository(MetricRegistry registry, MetricCounterBackup backup, Locale locale) {
-        this.backup = backup;
+    private MetricRepository(MetricRegistry registry, String backupDirectory, Locale locale) {
+        this.backup = StringUtils.isBlank(backupDirectory) ? MetricCounterBackup.noActionBackupService : new MetricCounterBackup(backupDirectory);
         this.registry = registry;
-        repo = new MetricRepositoryService(registry, backup, locale);
+        repo = new MetricRepositoryService(this.registry, backup, locale);
         shutdownHook = getShutdownHook();
         getBackupThread().start();
         getCleanUpThread().start();
