@@ -16,7 +16,7 @@ public class HourlyMetricId<METRIC extends Metric> extends TemporalMetricId<METR
 
     @Override
     public long truncateTimestamp(long timestamp) {
-        return timestamp / TimeUnit.HOURS.toMillis(1);
+        return (timestamp / TimeUnit.HOURS.toMillis(1)) * TimeUnit.HOURS.toMillis(1);
     }
 
     public static HourlyMetricIdBuilder<Counter> createHourlyCounterIdBuilder() {

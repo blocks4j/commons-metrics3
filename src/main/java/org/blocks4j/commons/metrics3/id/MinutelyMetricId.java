@@ -16,7 +16,7 @@ public class MinutelyMetricId<METRIC extends Metric> extends TemporalMetricId<ME
 
     @Override
     public long truncateTimestamp(long timestamp) {
-        return timestamp / TimeUnit.MINUTES.toMillis(1);
+        return (timestamp / TimeUnit.MINUTES.toMillis(1)) * TimeUnit.MINUTES.toMillis(1);
     }
 
     public static MinutelyMetricIdBuilder<Counter> createMinutelyCounterIdBuilder() {
