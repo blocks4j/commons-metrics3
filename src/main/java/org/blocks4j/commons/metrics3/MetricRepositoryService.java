@@ -15,171 +15,108 @@
  */
 package org.blocks4j.commons.metrics3;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import com.codahale.metrics.Counter;
+import com.codahale.metrics.Metric;
+import com.codahale.metrics.MetricRegistry;
 import org.apache.commons.lang3.time.FastDateFormat;
+import org.blocks4j.commons.metrics3.id.TemporalMetricId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.codahale.metrics.Counter;
-import com.codahale.metrics.Histogram;
-import com.codahale.metrics.Meter;
-import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.Timer;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 final class MetricRepositoryService {
 
     private static final Logger log = LoggerFactory.getLogger(MetricRepositoryService.class);
-    private final Object lockCounter = new Object();
-    private final Object lockMeter = new Object();
-    private final Object lockTimer = new Object();
-    private final Object lockHistogram = new Object();
-
-    private final ConcurrentMap<String, Meter> meters = new ConcurrentHashMap<>();
-    private final ConcurrentMap<String, Counter> counters = new ConcurrentHashMap<>();
-    private final ConcurrentMap<String, Timer> timers = new ConcurrentHashMap<>();
-    private final ConcurrentMap<String, Histogram> histograms = new ConcurrentHashMap<>();
 
     private final MetricCounterBackup backup;
     private final MetricRegistry registry;
     private final FastDateFormat dateFormat;
 
+    private final ConcurrentMap<String, MetricsRepositoryEntry> metricsRepositoryIds;
+
     public MetricRepositoryService(MetricRegistry registry, MetricCounterBackup backup, Locale locale) {
+        this.metricsRepositoryIds = new ConcurrentHashMap<>();
         this.registry = registry;
         this.backup = backup;
-        this.dateFormat = FastDateFormat.getInstance("dd/MM/yyyy '('EEE')'", locale);
+        this.dateFormat = FastDateFormat.getInstance("dd/MM/yyyy HH:mm'('EEE')'", locale);
     }
 
-    public Meter getDailyMeter(Class<?> klass, String name) {
-        String granularity = getDay();
-        String metricName = getMetricName(klass, name, granularity);
+    public <METRIC extends Metric, ID extends TemporalMetricId<METRIC>> METRIC getMetric(ID metricId) {
+        long referenceTimestamp = metricId.truncateTimestamp(System.currentTimeMillis());
+        MetricsRepositoryEntry metricsRepositoryEntry = new MetricsRepositoryEntry(metricId, referenceTimestamp, this.dateFormat);
 
-        Meter result = meters.get(metricName);
-        if (null != result) {
-            return result;
-        }
+        synchronized (this) {
+            METRIC metric = (METRIC) this.getMetric(metricsRepositoryEntry);
 
-        synchronized (lockMeter) {
-            try {
-                meters.putIfAbsent(metricName, registry.meter(MetricRegistry.name(klass, "meter", name + "_" + granularity)));
-            } catch (Exception ignored) {
-                log.error("error while inserting new meter", ignored);
+            if (metric == null) {
+                metric = this.createNewMetric(metricsRepositoryEntry);
+                this.metricsRepositoryIds.putIfAbsent(metricsRepositoryEntry.getRepositoryId(), metricsRepositoryEntry);
             }
+            return metric;
         }
-
-        result = meters.get(metricName);
-        return result != null ? result : registry.meter("fallback");
     }
 
-    public Counter getDailyCounter(Class<?> klass, String name) {
-        String granularity = getDay();
-        String metricName = getMetricName(klass, name, granularity);
-
-        Counter result = counters.get(metricName);
-        if (null != result) {
-            return result;
+    private <METRIC extends Metric> METRIC createNewMetric(MetricsRepositoryEntry metricsRepositoryEntry) {
+        Metric metric;
+        switch (metricsRepositoryEntry.getMetricId().getMetricType()) {
+            case METER:
+                metric = this.registry.meter(metricsRepositoryEntry.getRepositoryId());
+                break;
+            case COUNTER:
+                String repositoryId = metricsRepositoryEntry.getRepositoryId();
+                metric = this.registry.counter(repositoryId);
+                this.loadBackup((Counter) metric, repositoryId);
+                break;
+            case TIMER:
+                metric = this.registry.timer(metricsRepositoryEntry.getRepositoryId());
+                break;
+            default:
+                throw new IllegalArgumentException("Unknown metric type.");
         }
 
-        synchronized (lockCounter) {
-            try {
-                Counter counter = registry.counter(MetricRegistry.name(klass, "counter", name + "_" + granularity));
+        return (METRIC) metric;
+    }
 
-                long value = backup.get(metricName);
-                if (value > 0 && counter.getCount() == 0) {
-                    counter.inc(value);
-                }
-                counters.putIfAbsent(metricName, counter);
-
-            } catch (Exception ignored) {
-                log.error("error while inserting new counter", ignored);
-            }
+    private void loadBackup(Counter counter, String repositoryId) {
+        long value = backup.get(repositoryId);
+        if (value > 0 && counter.getCount() == 0) {
+            counter.inc(value);
         }
+    }
 
-        result = counters.get(metricName);
-        return result != null ? result : registry.counter("fallback");
+    public synchronized Metric getMetric(MetricsRepositoryEntry metricsRepositoryEntry) {
+        return this.registry.getMetrics().get(metricsRepositoryEntry.getRepositoryId());
     }
 
     public void backupCounters() {
-        for (Entry<String, Counter> each : counters.entrySet()) {
-            try {
-                backup.persist(each.getKey(), each.getValue().getCount());
-            } catch (Exception ignored) {
-                log.error("error while persisting counter", ignored);
+        for (MetricsRepositoryEntry metricsRepositoryEntry : metricsRepositoryIds.values()) {
+            if (metricsRepositoryEntry.getMetricId().getMetricType() == MetricType.COUNTER) {
+                try {
+                    backup.persist(metricsRepositoryEntry.getRepositoryId(), ((Counter) this.getMetric(metricsRepositoryEntry)).getCount());
+                } catch (Exception ignored) {
+                    log.error("error while persisting counter", ignored);
+                }
             }
         }
     }
 
-    public Timer getDailyTimer(Class<?> klass, String name) {
-        String day = getDay();
-        String metricName = getMetricName(klass, name, day);
-        Timer result = timers.get(metricName);
-        if (null != result) {
-            return result;
-        }
-
-        synchronized (lockTimer) {
-            try {
-                timers.putIfAbsent(metricName, registry.timer(MetricRegistry.name(klass, "timer", name + "_" + day)));
-            } catch (Exception ignored) {
-                log.error("error while inserting new timer", ignored);
-            }
-        }
-
-        result = timers.get(metricName);
-        return result != null ? result : registry.timer("fallback");
+    public List<MetricsRepositoryEntry> getKeys() {
+        return new ArrayList<>(this.metricsRepositoryIds.values());
     }
 
-    public Histogram getDailyHistogram(Class<?> klass, String name) {
-        String day = getDay();
-        String metricName = getMetricName(klass, name, day);
-        Histogram result = histograms.get(metricName);
-        if (null != result) {
-            return result;
-        }
-
-        synchronized (lockHistogram) {
-            try {
-                histograms.putIfAbsent(metricName, registry.histogram(MetricRegistry.name(klass, "histogram", name + "_" + day)));
-            } catch (Exception ignored) {
-                log.error("error while inserting new histogram", ignored);
-            }
-        }
-
-        result = histograms.get(metricName);
-        return result != null ? result : registry.histogram("fallback");
+    public void remove(TemporalMetricId<?> metricId, long referenceTimestamp) {
+        this.remove(new MetricsRepositoryEntry(metricId, referenceTimestamp, this.dateFormat));
     }
 
-    public List<Set<String>> getKeys() {
-        return Arrays.asList(meters.keySet(), timers.keySet(), counters.keySet(), histograms.keySet());
-    }
+    public synchronized void remove(MetricsRepositoryEntry entry) {
+        String repositoryId = entry.getRepositoryId();
 
-    public void remove(String[] fullName, String key) {
-        try {
-            registry.remove(MetricRegistry.name(Class.forName(fullName[0]), fullName[1] + "_" + fullName[2]));
-            counters.remove(key);
-            meters.remove(key);
-            timers.remove(key);
-            histograms.remove(key);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        this.metricsRepositoryIds.remove(repositoryId);
+        this.registry.remove(repositoryId);
     }
-
-    public FastDateFormat getDateFormat() {
-        return dateFormat;
-    }
-
-    private String getDay() {
-        String day = dateFormat.format(System.currentTimeMillis());
-        return day;
-    }
-
-    private String getMetricName(Class<?> klass, String name, String ts) {
-        return String.format("%s|%s|%s", klass.getName(), name, ts);
-    }
-
 }
