@@ -6,8 +6,10 @@ import com.codahale.metrics.Meter;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.Timer;
 import org.blocks4j.commons.metrics3.MetricType;
+import org.joda.time.DateTime;
 
 import java.util.Calendar;
+import java.util.concurrent.TimeUnit;
 
 public class DailyMetricId<METRIC extends Metric> extends TemporalMetricId<METRIC> {
 
@@ -17,15 +19,7 @@ public class DailyMetricId<METRIC extends Metric> extends TemporalMetricId<METRI
 
     @Override
     public long truncateTimestamp(long timestamp) {
-        Calendar calendar = Calendar.getInstance();
-        calendar.setTimeInMillis(timestamp);
-
-        calendar.set(Calendar.MILLISECOND, 0);
-        calendar.set(Calendar.SECOND, 0);
-        calendar.set(Calendar.MINUTE, 0);
-        calendar.set(Calendar.HOUR_OF_DAY, 0);
-
-        return calendar.getTimeInMillis();
+        return new DateTime(timestamp).withTimeAtStartOfDay().getMillis();
     }
 
     public static DailyMetricIdBuilder<Counter> createDailyCounterIdBuilder() {
@@ -43,6 +37,16 @@ public class DailyMetricId<METRIC extends Metric> extends TemporalMetricId<METRI
     public static class DailyMetricIdBuilder<METRIC extends Metric> extends TemporalMetricIdBuilder<METRIC, DailyMetricId<METRIC>> {
         private DailyMetricIdBuilder(MetricType metricType) {
             super(new DailyMetricId<METRIC>(metricType));
+            this.expiration(TimeUnit.DAYS.toMillis(2));
+        }
+
+        @Override
+        public TemporalMetricIdBuilder<METRIC, DailyMetricId<METRIC>> expiration(long expiration) {
+            if(expiration < TimeUnit.DAYS.toMillis(1)){
+                throw new IllegalStateException("Is this configuration right?");
+            }
+
+            return super.expiration(expiration);
         }
     }
 }

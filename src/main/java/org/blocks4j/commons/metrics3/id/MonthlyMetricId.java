@@ -5,8 +5,10 @@ import com.codahale.metrics.Meter;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.Timer;
 import org.blocks4j.commons.metrics3.MetricType;
+import org.joda.time.DateTime;
+import org.joda.time.LocalDate;
 
-import java.util.Calendar;
+import java.util.concurrent.TimeUnit;
 
 public class MonthlyMetricId<METRIC extends Metric> extends TemporalMetricId<METRIC> {
 
@@ -16,16 +18,8 @@ public class MonthlyMetricId<METRIC extends Metric> extends TemporalMetricId<MET
 
     @Override
     public long truncateTimestamp(long timestamp) {
-        Calendar calendar = Calendar.getInstance();
-        calendar.setTimeInMillis(timestamp);
-
-        calendar.set(Calendar.MILLISECOND, 0);
-        calendar.set(Calendar.SECOND, 0);
-        calendar.set(Calendar.MINUTE, 0);
-        calendar.set(Calendar.HOUR_OF_DAY, 0);
-        calendar.set(Calendar.DAY_OF_MONTH, 0);
-
-        return calendar.getTimeInMillis();
+        LocalDate monthFirst = new DateTime(timestamp).toLocalDate().withDayOfMonth(1);
+        return monthFirst.toDateTimeAtStartOfDay().getMillis();
     }
 
     public static MonthlyMetricIdBuilder<Counter> createMonthlyCounterIdBuilder() {
@@ -43,6 +37,16 @@ public class MonthlyMetricId<METRIC extends Metric> extends TemporalMetricId<MET
     public static class MonthlyMetricIdBuilder<METRIC extends Metric> extends TemporalMetricIdBuilder<METRIC, MonthlyMetricId<METRIC>> {
         private MonthlyMetricIdBuilder(MetricType metricType) {
             super(new MonthlyMetricId<METRIC>(metricType));
+            this.expiration(TimeUnit.DAYS.toMillis(32));
+        }
+
+        @Override
+        public TemporalMetricIdBuilder<METRIC, MonthlyMetricId<METRIC>> expiration(long expiration) {
+            if(expiration < TimeUnit.DAYS.toMillis(31)){
+                throw new IllegalStateException("Is this configuration right?");
+            }
+
+            return super.expiration(expiration);
         }
     }
 }

@@ -12,6 +12,8 @@ public abstract class TemporalMetricId<METRIC extends Metric> implements Cloneab
 
     private String name;
 
+    private long expiration;
+
     public TemporalMetricId() {
 
     }
@@ -76,6 +78,14 @@ public abstract class TemporalMetricId<METRIC extends Metric> implements Cloneab
         this.name = name;
     }
 
+    public long getExpiration() {
+        return expiration;
+    }
+
+    protected void setExpiration(long expiration) {
+        this.expiration = expiration;
+    }
+
     public TemporalMetricId<?> clone() throws CloneNotSupportedException {
         return (TemporalMetricId<?>) super.clone();
     }
@@ -96,6 +106,12 @@ public abstract class TemporalMetricId<METRIC extends Metric> implements Cloneab
             this.instance.setName(name);
             return this;
         }
+
+        public TemporalMetricIdBuilder<METRIC, ID> expiration(long expiration) {
+            this.instance.setExpiration(expiration);
+            return this;
+        }
+
 
         public ID build() {
             try {

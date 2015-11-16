@@ -15,7 +15,8 @@
  */
 package org.blocks4j.commons.metrics3;
 
-import com.codahale.metrics.*;
+import com.codahale.metrics.Metric;
+import com.codahale.metrics.MetricRegistry;
 import org.apache.commons.lang3.LocaleUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.blocks4j.commons.metrics3.id.TemporalMetricId;
@@ -145,9 +146,9 @@ public class MetricRepository {
 
     private void purgeMetric(MetricsRepositoryEntry metricsRepositoryEntry) {
         try {
-            long daysBetween = TimeUnit.MILLISECONDS.toDays(System.currentTimeMillis()) - TimeUnit.MILLISECONDS.toDays(metricsRepositoryEntry.getReferenceTimestamp());
+            long lifetime = System.currentTimeMillis() - metricsRepositoryEntry.getReferenceTimestamp();
 
-            if (daysBetween > 0) {
+            if (lifetime > metricsRepositoryEntry.getMetricId().getExpiration()) {
                 repo.remove(metricsRepositoryEntry);
             }
 

@@ -34,6 +34,16 @@ public class MinutelyMetricId<METRIC extends Metric> extends TemporalMetricId<ME
     public static class MinutelyMetricIdBuilder<METRIC extends Metric> extends TemporalMetricIdBuilder<METRIC, MinutelyMetricId<METRIC>> {
         private MinutelyMetricIdBuilder(MetricType metricType) {
             super(new MinutelyMetricId<METRIC>(metricType));
+            this.expiration(TimeUnit.HOURS.toMillis(1));
+        }
+
+        @Override
+        public TemporalMetricIdBuilder<METRIC, MinutelyMetricId<METRIC>> expiration(long expiration) {
+            if(expiration < TimeUnit.MINUTES.toMillis(1)){
+                throw new IllegalStateException("Is this configuration right?");
+            }
+
+            return super.expiration(expiration);
         }
     }
 }
