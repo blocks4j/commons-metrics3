@@ -38,6 +38,7 @@ public class MetricRepository {
     private final MetricRepositoryService repo;
     private final MetricCounterBackup backup;
     private final MetricRegistry registry;
+    private long cleanUpInterval;
 
     public static Builder forRegistry(MetricRegistry registry) {
         return new Builder(registry);
@@ -47,10 +48,12 @@ public class MetricRepository {
         private final MetricRegistry registry;
         private Locale locale;
         private String backupDirectory;
+        private long cleanUpInterval;
 
         private Builder(MetricRegistry registry) {
             this.registry = registry;
             this.locale = Locale.getDefault();
+            this.cleanUpInterval = TimeUnit.MINUTES.toMillis(1);
         }
 
         public Builder formattedFor(Locale locale) {
@@ -73,19 +76,25 @@ public class MetricRepository {
             return this;
         }
 
+        public Builder withCleanUpInterval(long milliseconds) {
+            this.cleanUpInterval = milliseconds;
+            return this;
+        }
+
         public MetricRepository build() {
-            return new MetricRepository(registry, backupDirectory, locale);
+            return new MetricRepository(this.registry, this.backupDirectory, this.locale, this.cleanUpInterval);
         }
     }
 
-    private MetricRepository(MetricRegistry registry, String backupDirectory, Locale locale) {
+    private MetricRepository(MetricRegistry registry, String backupDirectory, Locale locale, long cleanUpInterval) {
         this.backup = StringUtils.isBlank(backupDirectory) ? MetricCounterBackup.noActionBackupService : new MetricCounterBackup(backupDirectory);
         this.registry = registry;
-        repo = new MetricRepositoryService(this.registry, backup, locale);
-        shutdownHook = getShutdownHook();
+        this.repo = new MetricRepositoryService(this.registry, this.backup, locale);
+        this.cleanUpInterval = cleanUpInterval;
+        this.shutdownHook = getShutdownHook();
         getBackupThread().start();
         getCleanUpThread().start();
-        Runtime.getRuntime().addShutdownHook(shutdownHook);
+        Runtime.getRuntime().addShutdownHook(this.shutdownHook);
     }
 
     private Thread getShutdownHook() {
@@ -132,7 +141,7 @@ public class MetricRepository {
             public void run() {
                 try {
                     while (true) {
-                        TimeUnit.MINUTES.sleep(1);
+                        TimeUnit.MILLISECONDS.sleep(MetricRepository.this.cleanUpInterval);
                         cleanUp();
                     }
                 } catch (InterruptedException e) {
@@ -143,10 +152,10 @@ public class MetricRepository {
     }
 
     private void cleanUp() {
-        for (MetricsRepositoryEntry metricsRepositoryEntry : repo.getKeys()) {
+        for (MetricsRepositoryEntry metricsRepositoryEntry : this.repo.getKeys()) {
             purgeMetric(metricsRepositoryEntry);
         }
-        backup.cleanup();
+        this.backup.cleanup();
     }
 
     private void purgeMetric(MetricsRepositoryEntry metricsRepositoryEntry) {
@@ -154,7 +163,7 @@ public class MetricRepository {
             long lifetime = System.currentTimeMillis() - metricsRepositoryEntry.getReferenceTimestamp();
 
             if (lifetime > metricsRepositoryEntry.getMetricId().getExpiration()) {
-                repo.remove(metricsRepositoryEntry);
+                this.repo.remove(metricsRepositoryEntry);
             }
 
         } catch (Exception e) {
@@ -163,11 +172,11 @@ public class MetricRepository {
     }
 
     public <METRIC extends Metric, ID extends TemporalMetricId<METRIC>> METRIC getMetric(ID metricId) {
-        return repo.getMetric(metricId);
+        return this.repo.getMetric(metricId);
     }
 
     /**
-     * @deprecated  replaced by {@link #getMetric(TemporalMetricId)}
+     * @deprecated replaced by {@link #getMetric(TemporalMetricId)}
      */
     @Deprecated
     public Meter dailyMeter(Class<?> klass, String name) {
@@ -178,7 +187,7 @@ public class MetricRepository {
     }
 
     /**
-     * @deprecated  replaced by {@link #getMetric(TemporalMetricId)}
+     * @deprecated replaced by {@link #getMetric(TemporalMetricId)}
      */
     @Deprecated
     public Counter dailyCounter(Class<?> klass, String name) {
@@ -189,7 +198,7 @@ public class MetricRepository {
     }
 
     /**
-     * @deprecated  replaced by {@link #getMetric(TemporalMetricId)}
+     * @deprecated replaced by {@link #getMetric(TemporalMetricId)}
      */
     @Deprecated
     public Timer dailyTimer(Class<?> klass, String name) {
@@ -200,7 +209,7 @@ public class MetricRepository {
     }
 
     /**
-     * @deprecated  replaced by {@link #getMetric(TemporalMetricId)}
+     * @deprecated replaced by {@link #getMetric(TemporalMetricId)}
      */
     @Deprecated
     public Histogram dailyHistogram(Class<?> klass, String name) {
@@ -213,4 +222,5 @@ public class MetricRepository {
     public MetricRegistry getMetricRegistry() {
         return this.registry;
     }
+
 }
