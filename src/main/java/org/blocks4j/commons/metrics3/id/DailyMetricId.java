@@ -2,6 +2,7 @@ package org.blocks4j.commons.metrics3.id;
 
 
 import com.codahale.metrics.Counter;
+import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.Timer;
@@ -32,6 +33,10 @@ public class DailyMetricId<METRIC extends Metric> extends TemporalMetricId<METRI
 
     public static DailyMetricIdBuilder<Timer> createDailyTimerIdBuilder() {
         return new DailyMetricIdBuilder<>(MetricType.TIMER);
+    }
+
+    public static DailyMetricIdBuilder<Histogram> createDailyHistogramIdBuilder() {
+        return new DailyMetricIdBuilder<>(MetricType.HISTOGRAM);
     }
 
     public static class DailyMetricIdBuilder<METRIC extends Metric> extends TemporalMetricIdBuilder<METRIC, DailyMetricId<METRIC>> {

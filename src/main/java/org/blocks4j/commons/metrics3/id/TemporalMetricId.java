@@ -2,6 +2,7 @@ package org.blocks4j.commons.metrics3.id;
 
 import com.codahale.metrics.Metric;
 import org.apache.commons.lang.ObjectUtils;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.blocks4j.commons.metrics3.MetricType;
 
 public abstract class TemporalMetricId<METRIC extends Metric> implements Cloneable {
@@ -36,20 +37,17 @@ public abstract class TemporalMetricId<METRIC extends Metric> implements Cloneab
 
         return ObjectUtils.equals(this.metricType, that.metricType) &&
                 ObjectUtils.equals(this.ownerClass, that.ownerClass) &&
+                ObjectUtils.equals(this.expiration, that.expiration) &&
                 ObjectUtils.equals(this.name, that.name);
     }
 
     @Override
     public int hashCode() {
-        Object[] attrs = {this.metricType, this.ownerClass, this.name};
-
-        int result = 1;
-
-        for (Object element : attrs) {
-            result = 31 * result + (element == null ? 0 : element.hashCode());
-        }
-
-        return result;
+        return new HashCodeBuilder().append(this.metricType)
+                                    .append(this.ownerClass)
+                                    .append(this.name)
+                                    .append(this.expiration)
+                                    .hashCode();
     }
 
     public abstract long truncateTimestamp(long timestamp);

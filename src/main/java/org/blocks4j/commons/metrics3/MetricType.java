@@ -4,7 +4,8 @@ public enum MetricType {
 
     COUNTER("Counter"),
     METER("Meter"),
-    TIMER("Timer");
+    TIMER("Timer"),
+    HISTOGRAM("Histogram");
 
     private final String name;
 

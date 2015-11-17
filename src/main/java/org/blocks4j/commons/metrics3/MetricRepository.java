@@ -15,10 +15,15 @@
  */
 package org.blocks4j.commons.metrics3;
 
+import com.codahale.metrics.Counter;
+import com.codahale.metrics.Histogram;
+import com.codahale.metrics.Meter;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.Timer;
 import org.apache.commons.lang3.LocaleUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.blocks4j.commons.metrics3.id.DailyMetricId;
 import org.blocks4j.commons.metrics3.id.TemporalMetricId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -161,7 +166,51 @@ public class MetricRepository {
         return repo.getMetric(metricId);
     }
 
+    /**
+     * @deprecated  replaced by {@link #getMetric(TemporalMetricId)}
+     */
+    @Deprecated
+    public Meter dailyMeter(Class<?> klass, String name) {
+        return this.getMetric(DailyMetricId.createDailyMeterIdBuilder()
+                .name(name)
+                .ownerClass(klass)
+                .build());
+    }
+
+    /**
+     * @deprecated  replaced by {@link #getMetric(TemporalMetricId)}
+     */
+    @Deprecated
+    public Counter dailyCounter(Class<?> klass, String name) {
+        return this.getMetric(DailyMetricId.createDailyCounterIdBuilder()
+                .name(name)
+                .ownerClass(klass)
+                .build());
+    }
+
+    /**
+     * @deprecated  replaced by {@link #getMetric(TemporalMetricId)}
+     */
+    @Deprecated
+    public Timer dailyTimer(Class<?> klass, String name) {
+        return this.getMetric(DailyMetricId.createDailyTimerIdBuilder()
+                .name(name)
+                .ownerClass(klass)
+                .build());
+    }
+
+    /**
+     * @deprecated  replaced by {@link #getMetric(TemporalMetricId)}
+     */
+    @Deprecated
+    public Histogram dailyHistogram(Class<?> klass, String name) {
+        return this.getMetric(DailyMetricId.createDailyHistogramIdBuilder()
+                .name(name)
+                .ownerClass(klass)
+                .build());
+    }
+
     public MetricRegistry getMetricRegistry() {
-        return registry;
+        return this.registry;
     }
 }

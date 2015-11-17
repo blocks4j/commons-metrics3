@@ -1,6 +1,7 @@
 package org.blocks4j.commons.metrics3.id;
 
 import com.codahale.metrics.Counter;
+import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.Timer;
@@ -32,6 +33,10 @@ public class MonthlyMetricId<METRIC extends Metric> extends TemporalMetricId<MET
 
     public static MonthlyMetricIdBuilder<Timer> createMonthlyTimerIdBuilder() {
         return new MonthlyMetricIdBuilder<>(MetricType.TIMER);
+    }
+
+    public static MonthlyMetricIdBuilder<Histogram> createMonthlyHistogramIdBuilder() {
+        return new MonthlyMetricIdBuilder<>(MetricType.HISTOGRAM);
     }
 
     public static class MonthlyMetricIdBuilder<METRIC extends Metric> extends TemporalMetricIdBuilder<METRIC, MonthlyMetricId<METRIC>> {
