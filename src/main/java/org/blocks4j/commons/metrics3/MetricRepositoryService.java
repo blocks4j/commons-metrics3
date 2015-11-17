@@ -24,8 +24,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -118,5 +123,23 @@ final class MetricRepositoryService {
 
         this.metricsRepositoryIds.remove(repositoryId);
         this.registry.remove(repositoryId);
+    }
+
+    public Map<MetricsRepositoryEntry, Metric> getMetricRepository() {
+        Map<MetricsRepositoryEntry, Metric> metricRepo = new HashMap<>();
+
+        Set<Map.Entry<String, MetricsRepositoryEntry>> entries = new HashSet<>(this.metricsRepositoryIds.entrySet());
+
+        for (Map.Entry<String, MetricsRepositoryEntry> idRepoEntry : entries) {
+            Metric metric = this.getMetric(idRepoEntry.getValue());
+
+            if (metric == null) {
+                throw new IllegalStateException();
+            }
+
+            metricRepo.put(idRepoEntry.getValue(), metric);
+        }
+
+        return Collections.unmodifiableMap(metricRepo);
     }
 }

@@ -29,6 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class MetricRepository {
@@ -212,5 +213,9 @@ public class MetricRepository {
 
     public MetricRegistry getMetricRegistry() {
         return this.registry;
+    }
+
+    public Map<MetricsRepositoryEntry, Metric> getMetricRepository() {
+        return this.repo.getMetricRepository();
     }
 }
