@@ -15,15 +15,10 @@
  */
 package org.blocks4j.commons.metrics3;
 
-import com.codahale.metrics.Counter;
-import com.codahale.metrics.Histogram;
-import com.codahale.metrics.Meter;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.Timer;
 import org.apache.commons.lang3.LocaleUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.blocks4j.commons.metrics3.id.DailyMetricId;
 import org.blocks4j.commons.metrics3.id.TemporalMetricId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
