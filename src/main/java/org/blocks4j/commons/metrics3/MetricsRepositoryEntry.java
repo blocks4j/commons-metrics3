@@ -1,9 +1,10 @@
 package org.blocks4j.commons.metrics3;
 
 import com.codahale.metrics.MetricRegistry;
-import org.apache.commons.lang.ObjectUtils;
 import org.apache.commons.lang3.time.FastDateFormat;
 import org.blocks4j.commons.metrics3.id.TemporalMetricId;
+
+import java.util.Objects;
 
 public class MetricsRepositoryEntry {
     private final TemporalMetricId<?> metricId;
@@ -33,8 +34,8 @@ public class MetricsRepositoryEntry {
 
         MetricsRepositoryEntry that = (MetricsRepositoryEntry) object;
 
-        return ObjectUtils.equals(this.metricId, that.metricId) &&
-                ObjectUtils.equals(this.referenceTimestamp, that.referenceTimestamp);
+        return Objects.equals(this.metricId, that.metricId) &&
+                Objects.equals(this.referenceTimestamp, that.referenceTimestamp);
     }
 
     @Override

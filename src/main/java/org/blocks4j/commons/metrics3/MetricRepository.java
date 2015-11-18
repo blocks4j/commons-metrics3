@@ -166,50 +166,6 @@ public class MetricRepository {
         return repo.getMetric(metricId);
     }
 
-    /**
-     * @deprecated  replaced by {@link #getMetric(TemporalMetricId)}
-     */
-    @Deprecated
-    public Meter dailyMeter(Class<?> klass, String name) {
-        return this.getMetric(DailyMetricId.createDailyMeterIdBuilder()
-                .name(name)
-                .ownerClass(klass)
-                .build());
-    }
-
-    /**
-     * @deprecated  replaced by {@link #getMetric(TemporalMetricId)}
-     */
-    @Deprecated
-    public Counter dailyCounter(Class<?> klass, String name) {
-        return this.getMetric(DailyMetricId.createDailyCounterIdBuilder()
-                .name(name)
-                .ownerClass(klass)
-                .build());
-    }
-
-    /**
-     * @deprecated  replaced by {@link #getMetric(TemporalMetricId)}
-     */
-    @Deprecated
-    public Timer dailyTimer(Class<?> klass, String name) {
-        return this.getMetric(DailyMetricId.createDailyTimerIdBuilder()
-                .name(name)
-                .ownerClass(klass)
-                .build());
-    }
-
-    /**
-     * @deprecated  replaced by {@link #getMetric(TemporalMetricId)}
-     */
-    @Deprecated
-    public Histogram dailyHistogram(Class<?> klass, String name) {
-        return this.getMetric(DailyMetricId.createDailyHistogramIdBuilder()
-                .name(name)
-                .ownerClass(klass)
-                .build());
-    }
-
     public MetricRegistry getMetricRegistry() {
         return this.registry;
     }
