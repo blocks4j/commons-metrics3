@@ -15,20 +15,16 @@
  */
 package org.blocks4j.commons.metrics3;
 
-import java.util.Date;
-import java.util.Locale;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
+import com.codahale.metrics.Metric;
+import com.codahale.metrics.MetricRegistry;
 import org.apache.commons.lang3.LocaleUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.time.FastDateFormat;
+import org.blocks4j.commons.metrics3.id.TemporalMetricId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.codahale.metrics.Counter;
-import com.codahale.metrics.Histogram;
-import com.codahale.metrics.Meter;
-import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.Timer;
+
+import java.util.Locale;
+import java.util.concurrent.TimeUnit;
 
 public class MetricRepository {
 
@@ -142,51 +138,30 @@ public class MetricRepository {
     }
 
     private void cleanUp() {
-        for (Set<String> keys : repo.getKeys()) {
-            purgeMetrics(keys, repo.getDateFormat());
+        for (MetricsRepositoryEntry metricsRepositoryEntry : repo.getKeys()) {
+            purgeMetric(metricsRepositoryEntry);
         }
         backup.cleanup();
     }
 
-    private void purgeMetrics(Set<String> keys, FastDateFormat formatter) {
-        for (String key : keys) {
-            String[] fullName = key.split("\\|");
-            if (fullName.length != 3) {
-                continue;
+    private void purgeMetric(MetricsRepositoryEntry metricsRepositoryEntry) {
+        try {
+            long lifetime = System.currentTimeMillis() - metricsRepositoryEntry.getReferenceTimestamp();
+
+            if (lifetime > metricsRepositoryEntry.getMetricId().getExpiration()) {
+                repo.remove(metricsRepositoryEntry);
             }
 
-            try {
-                Date meterDate = formatter.parse(fullName[2]);
-                long daysBetween = TimeUnit.MILLISECONDS.toDays(System.currentTimeMillis()) - TimeUnit.MILLISECONDS.toDays(meterDate.getTime());
-
-                if (daysBetween > 0) {
-                    repo.remove(fullName, key);
-                }
-
-            } catch (Exception e) {
-                log.warn("error while purging metrics", e);
-                continue;
-            }
+        } catch (Exception e) {
+            log.warn("error while purging metrics", e);
         }
     }
 
-    public Meter dailyMeter(Class<?> klass, String name) {
-        return repo.getDailyMeter(klass, name);
-    }
-
-    public Counter dailyCounter(Class<?> klass, String name) {
-        return repo.getDailyCounter(klass, name);
-    }
-
-    public Timer dailyTimer(Class<?> klass, String name) {
-        return repo.getDailyTimer(klass, name);
-    }
-
-    public Histogram dailyHistogram(Class<?> klass, String name) {
-        return repo.getDailyHistogram(klass, name);
+    public <METRIC extends Metric, ID extends TemporalMetricId<METRIC>> METRIC getMetric(ID metricId) {
+        return repo.getMetric(metricId);
     }
 
     public MetricRegistry getMetricRegistry() {
-        return registry;
+        return this.registry;
     }
 }
