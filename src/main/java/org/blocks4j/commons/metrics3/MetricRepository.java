@@ -15,20 +15,16 @@
  */
 package org.blocks4j.commons.metrics3;
 
-import com.codahale.metrics.Counter;
-import com.codahale.metrics.Histogram;
-import com.codahale.metrics.Meter;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.Timer;
 import org.apache.commons.lang3.LocaleUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.blocks4j.commons.metrics3.id.DailyMetricId;
 import org.blocks4j.commons.metrics3.id.TemporalMetricId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class MetricRepository {
@@ -175,52 +171,11 @@ public class MetricRepository {
         return this.repo.getMetric(metricId);
     }
 
-    /**
-     * @deprecated replaced by {@link #getMetric(TemporalMetricId)}
-     */
-    @Deprecated
-    public Meter dailyMeter(Class<?> klass, String name) {
-        return this.getMetric(DailyMetricId.createDailyMeterIdBuilder()
-                .name(name)
-                .ownerClass(klass)
-                .build());
-    }
-
-    /**
-     * @deprecated replaced by {@link #getMetric(TemporalMetricId)}
-     */
-    @Deprecated
-    public Counter dailyCounter(Class<?> klass, String name) {
-        return this.getMetric(DailyMetricId.createDailyCounterIdBuilder()
-                .name(name)
-                .ownerClass(klass)
-                .build());
-    }
-
-    /**
-     * @deprecated replaced by {@link #getMetric(TemporalMetricId)}
-     */
-    @Deprecated
-    public Timer dailyTimer(Class<?> klass, String name) {
-        return this.getMetric(DailyMetricId.createDailyTimerIdBuilder()
-                .name(name)
-                .ownerClass(klass)
-                .build());
-    }
-
-    /**
-     * @deprecated replaced by {@link #getMetric(TemporalMetricId)}
-     */
-    @Deprecated
-    public Histogram dailyHistogram(Class<?> klass, String name) {
-        return this.getMetric(DailyMetricId.createDailyHistogramIdBuilder()
-                .name(name)
-                .ownerClass(klass)
-                .build());
-    }
-
     public MetricRegistry getMetricRegistry() {
         return this.registry;
     }
 
+    public Map<MetricsRepositoryEntry, Metric> getMetricRepository() {
+        return this.repo.getMetricRepository();
+    }
 }
