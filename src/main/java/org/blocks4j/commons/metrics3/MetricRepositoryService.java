@@ -133,11 +133,10 @@ final class MetricRepositoryService {
         for (Map.Entry<String, MetricsRepositoryEntry> idRepoEntry : entries) {
             Metric metric = this.getMetric(idRepoEntry.getValue());
 
-            if (metric == null) {
-                throw new IllegalStateException();
+            if (metric != null) {
+                metricRepo.put(idRepoEntry.getValue(), metric);
             }
 
-            metricRepo.put(idRepoEntry.getValue(), metric);
         }
 
         return Collections.unmodifiableMap(metricRepo);
