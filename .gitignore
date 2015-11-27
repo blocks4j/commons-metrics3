@@ -12,6 +12,9 @@
 hs_err_pid*
 /target/
 
+# Eclipse config files
+.classpath
+
 # IntelliJ IDEA config files
 *.iml
 .idea
