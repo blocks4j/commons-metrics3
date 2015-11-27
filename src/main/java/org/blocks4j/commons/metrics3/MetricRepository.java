@@ -106,13 +106,15 @@ public class MetricRepository {
             }
 
             public void run() {
-                try {
-                    while (true) {
+                while (true) {
+                    try {
                         TimeUnit.MINUTES.sleep(1);
                         repo.backupCounters();
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    } catch (Throwable throwable) {
+                        log.error("Error in MetricRepository Backup.", throwable);
                     }
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
                 }
             }
         };
@@ -126,13 +128,15 @@ public class MetricRepository {
             }
 
             public void run() {
-                try {
-                    while (true) {
+                while (true) {
+                    try {
                         TimeUnit.MINUTES.sleep(1);
                         cleanUp();
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    } catch (Throwable throwable) {
+                        log.error("Error in MetricRepository Cleanup.", throwable);
                     }
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
                 }
             }
         };
