@@ -175,11 +175,9 @@ public class MetricRepository {
         return this.repo.getMetric(metricId);
     }
 
-
     public MetricRegistry getMetricRegistry() {
         return this.registry;
     }
-
 
     public Map<MetricsRepositoryEntry, Metric> getMetricRepository() {
         return this.repo.getMetricRepository();
